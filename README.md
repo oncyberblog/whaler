@@ -61,13 +61,11 @@ sudo systemctl enable docker
 
 next `sudo reboot` your machine and log back in and `cd whaler`.
 
-set your API key with: 
+edit the docker-compose.yml file to add your Logz.io API key: 
 
 ```
-export LOGZIO_TOKEN=<API KEY>
+ - LOGZIO_TOKEN=<API KEY>
 ```
-
-`export HOSTNAME` - this will be picked up and tagged as the `env` in logz.io.
 
 If you do not intend to use logz.io, then instead use the `docker-compose-nologging.yml` file by replacing the `docker-compose.yml` file with this file.
 
