@@ -14,5 +14,5 @@ COPY . ./app
 
 EXPOSE 2375
 
-CMD [ "python", "./app/app.py" ]
+CMD [ "python", "./app/Whaler.py" ]
 
