@@ -53,17 +53,17 @@ class VictimContainer(BaseContainer):
 				try:
 					self.processEvents(eventListener)
 				except Exception as e:
-					logger.warn("EventListener: Lost connection, retrying in 10s...[%s]" % e)
+					logger.warn("VictimContainer: Lost connection, retrying in 10s...[%s]" % e)
 					#traceback.print_exc(file=sys.stdout)
 					time.sleep(10)
 	
 	def processEvents(self, eventListener):
 		events=self.victimCli.events(decode=True)
-		logger.info("EventListener: Connected and streaming Daemon events")
+		logger.info("VictimContainer: Connected and streaming Daemon events")
 
 		for event in events:
 			logger.info(event)
-			logger.info("{'timestamp':'%s', source':'EventListener', 'action':'DaemonEvent', 'event':%s}" % (datetime.datetime.now().isoformat(),event))
+			logger.info("{'timestamp':'%s', source':'VictimContainer', 'action':'DaemonEvent', 'event':%s}" % (datetime.datetime.now().isoformat(),event))
 			if (hasattr( self , "on"+event['Action'].title())):
 				getattr( self , "on"+event['Action'].title())( event, eventListener )
 			else:
@@ -74,7 +74,7 @@ class VictimContainer(BaseContainer):
 	def onStart(self, event, eventListener):
 		containerId=event['id']
 		container=self.victimCli.containers.get(containerId)
-		logger.info("{'timestamp':'%s', source':'EventListener', 'action':'NewContainerStartEvent', 'id':'%s', 'status':'%s', attrs:%s}" % (datetime.datetime.now().isoformat(),container.id,container.status,container.attrs))
+		logger.info("{'timestamp':'%s', source':'VictimContainer', 'action':'NewContainerStartEvent', 'id':'%s', 'status':'%s', attrs:%s}" % (datetime.datetime.now().isoformat(),container.id,container.status,container.attrs))
 		eventListener.onStart(container)
 
 	def snapshotVictimContainer(self, filePath):
