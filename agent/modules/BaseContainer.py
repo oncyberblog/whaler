@@ -86,7 +86,7 @@ class BaseContainer:
 		for chunk in image.save():
 			f.write(chunk)
 		f.close()
-		logger.info("{'timestamp':'%s', source':'ContainerManager', 'action':'SavedContainerImage', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+		logger.info("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainerImage', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
 
 		outputFile=filePath + '/CNT_' + container.name + '-' + container.id + '.tar'
 		f = open(outputFile, 'w')
@@ -94,7 +94,7 @@ class BaseContainer:
 		for chunk in container.export():
 			f.write(chunk)
 		f.close()
-		logger.info("{'timestamp':'%s', source':'ContainerManager', 'action':'SavedContainer', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+		logger.info("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainer', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
 	
 	def resetBaselineFileChanges(self):
 		self.baselineChangedFiles = self.getAllFileSystemChanges()
