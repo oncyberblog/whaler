@@ -1,44 +1,18 @@
 version: '2'
 services:
   controller:
+    container_name: whaler
     build: ./agent
-    image: docker-pot/agent
+    image: whaler/agent
     restart: on-failure
     environment:
-        - CONTAINER_KILL_DELAY=60
+        - CONTAINER_KILL_DELAY=15
+        - LOGZIO_TOKEN
+        - LOGZIO_ENV=whaler-test
+        - LOGZIO_ZONE=us
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/whaler/snapshots:/tmp/whaler/snapshots
-    depends_on:
-      - victim
+      - /tmp/whaler:/tmp/whaler
+      - /:/host
 
-  victim:      
-      image: docker:stable-dind
-      privileged: true
-      restart: on-failure
-      ports:
-        - "2375:2375"
-      expose:
-      - "2375"
-
-  capture:
-    build: ./capture
-    image: docker-pot/capture
-    restart: on-failure
-    depends_on:
-      - victim
-    network_mode: service:victim
-    volumes:
-      - /tmp/whaler/capture:/tmp/whaler/capture  
-        
-  logging:
-    image: logzio/logzio-docker
-    privileged: true
-    restart: on-failure
-    environment:
-      - LOGZIO_TOKEN=${LOGZIO_TOKEN}
-      - LOGZIO_ZONE=us
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: ['-z','us','-a','env=${HOSTNAME}', '--statsinterval', '3600']
-    
+  
