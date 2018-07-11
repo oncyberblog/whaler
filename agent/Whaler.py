@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import datetime, time, logging, json
+import datetime, time, logging
 
 import docker
 
@@ -7,22 +7,16 @@ from modules.FingerprintService import FingerprintService
 from modules.CaptureContainer import CaptureContainer
 from modules.VictimContainer import VictimContainer
 from modules.LoggingContainer import LoggingContainer
+from modules.Configuration import Configuration
 
 logger = logging.getLogger(__name__)
-
-DOCKER_DAEMON_LOCAL_URL='unix://var/run/docker.sock'
-DOCKER_DAEMON_VICTIM_URL='tcp://victim:2375'
-
-WHALER_DATA_OUTPUT_FOLDER="/tmp/whaler/"
-CONTAINER_KILL_DELAY_SECS=10
-FUZZY_MATCH_THRESHOLD=85
 
 class Whaler():
 	
 	def __init__(self):
 		logger.info("Initialising Whaler")
-		self.victimCli=docker.DockerClient(base_url=DOCKER_DAEMON_VICTIM_URL)
-		self.hostCli=docker.DockerClient(base_url=DOCKER_DAEMON_LOCAL_URL)
+		self.victimCli=docker.DockerClient(base_url=Configuration().get("dockerDaemonVictimUrl"))
+		self.hostCli=docker.DockerClient(base_url=Configuration().get("dockerDaemonHostUrl"))
 		self.fingerprintService=FingerprintService()
 		
 
@@ -41,25 +35,21 @@ class Whaler():
 
 		self.victimContainer.listen(self)
 
-		
-
-	def shutdown(self):
-		pass
-
-
-	def getOutputFolder(self, container):
-		return WHALER_DATA_OUTPUT_FOLDER + "%s/%s/%s/%s" % (datetime.datetime.now().strftime('%Y%m%d'), datetime.datetime.now().strftime('%H%M'),container.image.tags[0], container.name)
 
 	def onStart(self, container):
 		#let the container run for some time, to generate evidence
-		logger.info("New container reported [%s] will terminate in [%s] seconds" % (container.name, CONTAINER_KILL_DELAY_SECS))
+		logger.info("New container reported [%s] will terminate in [%s] seconds" % (container.name, 
+										Configuration().get("maliciousContainerRunDurationSeconds")))
 		
-		outputFolder=self.getOutputFolder(container)
+		outputFolder= "%s/%s/%s/%s/%s" % (	Configuration().get("dataDirectory"), 
+											datetime.datetime.now().strftime('%Y%m%d'), 
+											datetime.datetime.now().strftime('%H%M'),
+											container.image.tags[0],
+											container.name)
 
-		time.sleep(CONTAINER_KILL_DELAY_SECS)
+
+		time.sleep(Configuration().get("maliciousContainerRunDurationSeconds"))
 		self.victimContainer.stopContainer(container)
-
-		
 
 		logger.info("output folder is %s" % outputFolder)
 
