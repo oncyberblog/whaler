@@ -19,7 +19,7 @@ class LoggingContainer(BaseContainer):
 		
 		try:
 			logger.debug("Deploying new Logging container [%s]" % Configuration().get("loggingContainerName"))
-			container = self.cli.containers.run(	image=Configuration().get("loggingContaineeImage"),
+			container = self.cli.containers.run(	image=Configuration().get("loggingContainerImage"),
 														name=Configuration().get("loggingContainerName"), 
 														restart_policy={"Name": "on-failure"},
 														volumes={'/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'rw'}},
