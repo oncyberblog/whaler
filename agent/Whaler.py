@@ -51,17 +51,14 @@ class Whaler():
 		time.sleep(Configuration().get("maliciousContainerRunDurationSeconds"))
 		self.victimContainer.stopContainer(container)
 
-		logger.info("output folder is %s" % outputFolder)
-
 		changedFiles=self.victimContainer.getFileSystemDifferencesFromBaseline()
 
-		logger.info("identifed changed file set as %s" % changedFiles)
+		logger.debug("identifed changed file set as %s" % changedFiles)
 
 		#check fingerprints - match explicitly, or use fuzzy logic for dynamic scripts / filenames
 		if self.fingerprintService.isKnownContainer(container, changedFiles):
 
 			logger.info("Found fingerprint match, will not archive container, or pcap")
-			self.victimContainer.snapshotVictimContainer(outputFolder)
 			self.victimContainer.redeployContainer()
 			self.captureContainer.redeployContainer()
 		else:

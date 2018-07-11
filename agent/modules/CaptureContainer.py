@@ -1,35 +1,25 @@
-import os, io, sys, time, datetime, shutil, logging, traceback
+import shutil, logging
 
-import docker
-
+from Configuration import Configuration
 from BaseContainer import BaseContainer
 
 logger = logging.getLogger(__name__)
 
-DOCKER_DAEMON_LOCAL_URL='unix://var/run/docker.sock'
-
-CAPTURE_CONTAINER_NAME="whaler_capture"
-CAPTURE_IMAGE_NAME="marsmensch/tcpdump"
-
-WHALER_NETWORK_NAME="whaler_default"
-
-WHALER_DATA_OUTPUT_FOLDER="/tmp/whaler/"
-
 class CaptureContainer(BaseContainer):
 	
 	def __init__(self):
-		BaseContainer.__init__(self, DOCKER_DAEMON_LOCAL_URL, CAPTURE_CONTAINER_NAME)
+		BaseContainer.__init__(self, Configuration().get("dockerDaemonHostUrl"), Configuration().get("captureContainerName"))
 
 	def deployContainer(self):
 		try:
-			logger.info("Deploying new Capture container [%s]" % CAPTURE_CONTAINER_NAME)
-			container = self.cli.containers.run(	image='marsmensch/tcpdump',
-														name=CAPTURE_CONTAINER_NAME, 
+			logger.debug("Deploying new Capture container [%s]" % Configuration().get("captureContainerName"))
+			container = self.cli.containers.run(	image=Configuration().get("captureContainerImage"),
+														name=Configuration().get("captureContainerName"), 
 														restart_policy={"Name": "on-failure"},
-														volumes={WHALER_DATA_OUTPUT_FOLDER+'/capture': {'bind': WHALER_DATA_OUTPUT_FOLDER + '/capture', 'mode': 'rw'}},
-														network_mode="container:whaler_victim",
+														volumes={Configuration().get("dataDirectory") + '/capture': {'bind': Configuration().get("dataDirectory") + '/capture', 'mode': 'rw'}},
+														network_mode="container:" + Configuration().get("victimContainerName"),
 														detach=True,
-														command='-W 5 -G 30 -w /tmp/whaler/capture/capfile -i eth0',
+														command='-W 5 -G 30 -w ' + Configuration().get("dataDirectory") + '/capture/capfile -i eth0',
 														
 			)
 			self.container=container
@@ -40,8 +30,9 @@ class CaptureContainer(BaseContainer):
 
 	def archiveCaptureFile(self, pCapFileStoragePath):
 		try:
-			shutil.copyfile(WHALER_DATA_OUTPUT_FOLDER + "/capture/capfile", pCapFileStoragePath + "/capture.pcap")
+			shutil.copyfile(Configuration().get("dataDirectory") + "/capture/capfile", pCapFileStoragePath + "/capture.pcap")
 			logger.info("Saved Pcap file(s) to %s/capture.pcap" % pCapFileStoragePath)
+		
 		except Exception as e:
 			logger.error("Error archiving capture file [%s]" % e)
 

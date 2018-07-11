@@ -5,10 +5,11 @@ COPY requirements.txt ./app
 
 WORKDIR ./app
 
-RUN pip install -r requirements.txt
 
 RUN apk update
-RUN apk add docker
+RUN apk add docker musl-dev linux-headers gcc
+
+RUN pip install -r requirements.txt
 
 COPY . ./app
 

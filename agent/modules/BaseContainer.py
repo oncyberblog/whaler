@@ -1,11 +1,8 @@
-import os, io, sys, time, datetime, shutil, logging
+import os, datetime, logging
 
 import docker
 
 logger = logging.getLogger(__name__)
-
-
-WHALER_DATA_OUTPUT_FOLDER="/tmp/whaler/"
 
 class BaseContainer:
 	
@@ -18,9 +15,6 @@ class BaseContainer:
 	def deployContainer(self):
 		self.container=self.getContainer()
 
-	def captureEvidence(self):
-		pass
-
 	def getCli(self, url):
 		return docker.DockerClient(base_url=url)
 
@@ -28,8 +22,9 @@ class BaseContainer:
 		if not containerName: 
 			containerName = self.containerName
 		try:
-			logger.info("Getting container %s " % containerName)
+			logger.debug("Getting container [%s] " % containerName)
 			return self.cli.containers.get(containerName)
+
 		except Exception as e:
 			logger.warn("unable to get container [%s] error[%s]" % (containerName, e))	
 			return None
@@ -41,9 +36,9 @@ class BaseContainer:
 			container=self.container
 
 		if container:
-			logger.info("Stopping container %s" % container.name)
+			logger.debug("Stopping container [%s]" % container.name)
 			container.stop()
-			logger.info("Stopped container %s" % container.name)
+			logger.info("Stopped container [%s]" % container.name)
 		else:
 			logger.warn("Could not stop container, has it been initialised?")
 
@@ -53,12 +48,14 @@ class BaseContainer:
 			return
 
 		try:
-			logger.info("Removing container [%s]" % self.containerName)
+			logger.debug("Removing container [%s]" % self.containerName)
 			self.container.remove(force=True)
 			self.container=None
 			logger.info("removed cotaniner [%s]" % self.containerName)
+		
 		except docker.errors.NotFound:
 			logger.warn("container [%s] not found to remove" % self.containerName)
+		
 		except Exception as e:
 			logger.error("Unable to kill / remove container [%s]" % e)
 	
@@ -71,13 +68,6 @@ class BaseContainer:
 		logger.info("Snapshotting image and container for [%s] to [%s]" % (container.name, filePath))
 
 		if not os.path.exists(filePath): os.makedirs(filePath)
-		try:
-			logger.info("container %s" % container)
-			logger.info("tags %s" % container.labels)
-			logger.info("image %s" % container.image)
-
-		except Exception as e:
-			logger.info(e)
 
 		image=container.image
 		outputFile=filePath + '/IMG_' + container.name + '-' + container.id + '.tar'
@@ -86,7 +76,7 @@ class BaseContainer:
 		for chunk in image.save():
 			f.write(chunk)
 		f.close()
-		logger.info("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainerImage', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+		logger.debug("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainerImage', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
 
 		outputFile=filePath + '/CNT_' + container.name + '-' + container.id + '.tar'
 		f = open(outputFile, 'w')
@@ -94,7 +84,7 @@ class BaseContainer:
 		for chunk in container.export():
 			f.write(chunk)
 		f.close()
-		logger.info("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainer', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+		logger.debug("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainer', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
 	
 	def resetBaselineFileChanges(self):
 		self.baselineChangedFiles = self.getAllFileSystemChanges()

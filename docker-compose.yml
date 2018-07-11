@@ -6,13 +6,13 @@ services:
     image: whaler/agent
     restart: on-failure
     environment:
-        - CONTAINER_KILL_DELAY=15
+        - WHALER_DATA_DIR
         - LOGZIO_TOKEN
         - LOGZIO_ENV=whaler-test
         - LOGZIO_ZONE=us
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp/whaler:/tmp/whaler
+      - /var/tmp/whaler:/var/tmp/whaler
       - /:/host
 
   

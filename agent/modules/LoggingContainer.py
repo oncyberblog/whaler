@@ -1,21 +1,16 @@
-import os, io, sys, time, datetime, shutil, logging, traceback
+import os, logging
 
 import docker
 
 from BaseContainer import BaseContainer
+from Configuration import Configuration
 
 logger = logging.getLogger(__name__)
-
-DOCKER_DAEMON_LOCAL_URL='unix://var/run/docker.sock'
-
-LOGGING_CONTAINER_NAME="whaler_logging"
-LOGGING_IMAGE_NAME="logzio/logzio-docker"
-
 
 class LoggingContainer(BaseContainer):
 	
 	def __init__(self):
-		BaseContainer.__init__(self, DOCKER_DAEMON_LOCAL_URL, LOGGING_CONTAINER_NAME)
+		BaseContainer.__init__(self, Configuration().get("dockerDaemonHostUrl"), Configuration().get("loggingContainerName"))
 
 	def deployContainer(self):
 		if  not os.environ.get('LOGZIO_TOKEN'):
@@ -23,9 +18,9 @@ class LoggingContainer(BaseContainer):
 			return
 		
 		try:
-			logger.info("Deploying new Logging container [%s]" % LOGGING_CONTAINER_NAME)
-			container = self.hostCli.containers.run(	image=LOGGING_IMAGE_NAME,
-														name=LOGGING_CONTAINER_NAME, 
+			logger.debug("Deploying new Logging container [%s]" % Configuration().get("loggingContainerName"))
+			container = self.cli.containers.run(	image=Configuration().get("loggingContaineeImage"),
+														name=Configuration().get("loggingContainerName"), 
 														restart_policy={"Name": "on-failure"},
 														volumes={'/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'rw'}},
 														detach=True,

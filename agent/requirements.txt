@@ -1,2 +1,3 @@
 docker
 fuzzywuzzy
+python-Levenshtein
