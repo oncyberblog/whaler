@@ -1,4 +1,4 @@
-import logging
+import logging, os
 
 from Configuration import Configuration
 

@@ -57,11 +57,24 @@ class Whaler():
 
 		#check fingerprints - match explicitly, or use fuzzy logic for dynamic scripts / filenames
 		if self.fingerprintService.isKnownContainer(container, changedFiles):
-
+			logger.info("%s" % {	'timestamp': datetime.datetime.now().isoformat(), 
+									'source': 'Whaler', 
+									'action': 'AttackDetected', 
+									'fingerPrintStatus':'Matched',
+									'fingerprint': self.fingerprintService.getFingerprint(container, changedFiles)
+								}
+			)
 			logger.info("Found fingerprint match, will not archive container, or pcap")
 			self.victimContainer.redeployContainer()
 			self.captureContainer.redeployContainer()
 		else:
+			logger.info("%s" % {	'timestamp': datetime.datetime.now().isoformat(), 
+									'source': 'Whaler', 
+									'action': 'AttackDetected', 
+									'fingerPrintStatus':'UnMatched',
+									'fingerprint': self.fingerprintService.getFingerprint(container, changedFiles)
+								}
+			)
 			#New attack -snapshot container(s) and pcap
 			self.victimContainer.snapshotContainer(container, outputFolder+"/snapshots")
 			self.captureContainer.archiveCaptureFile(outputFolder)

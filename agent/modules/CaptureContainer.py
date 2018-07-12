@@ -23,7 +23,7 @@ class CaptureContainer(BaseContainer):
 														
 			)
 			self.container=container
-			logger.info("deployed new container %s" % container.name)
+			logger.info("deployed new container [%s]" % container.name)
 
 		except Exception as e:
 			logger.error("failed deploying new container [%s]" %e)
