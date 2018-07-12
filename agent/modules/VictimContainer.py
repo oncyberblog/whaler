@@ -32,11 +32,11 @@ class VictimContainer(BaseContainer):
 			
 			self.resetBaselineFileChanges()
 			
-			network = self.cli.networks.get(Configuration().get("victimNetworkName"))
-			logger.debug("got network [%s]" % network.name)
+			#network = self.cli.networks.get(Configuration().get("victimNetworkName"))
+			#logger.debug("got network [%s]" % network.name)
 			#network.disconnect(container)
 			#network.connect(container, aliases=[Configuration().get("victimContainerAlias")])
-			logger.debug("attached victim container to network [%s] with alias [%s]" % (network.name, Configuration().get("victimContainerName")))
+			#logger.debug("attached victim container to network [%s] with alias [%s]" % (network.name, Configuration().get("victimContainerName")))
 			
 			logger.info("deployed new container [%s]" % container.name)
 
