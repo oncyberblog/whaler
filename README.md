@@ -1,7 +1,7 @@
 # Whaler
 
 Whaler is a Docker Daemon honeypot. It exposes an insecure Docker Daemon API with the intention of attracting and capturing attempts to run malicious containers.
-
+ 
 Whaler runs entirely in Docker and at the heart of the solution is a Docker in Docker (DinD) container which serves as the honeypot.
 
 ## Notes
