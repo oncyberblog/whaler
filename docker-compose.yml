@@ -16,19 +16,6 @@ services:
       - /:/host
     networks:
       - default
-  
-
-  victim: 
-    image: docker:stable-dind
-    privileged: true
-    restart: on-failure
-    ports:
-      - "2375:2375"
-    expose:
-      - "2375"
-    networks:
-      - default
-  
 
 networks:
   default:

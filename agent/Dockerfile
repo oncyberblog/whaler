@@ -1,14 +1,11 @@
 FROM python:2-alpine
 
+RUN apk update && apk add docker musl-dev linux-headers gcc
+
 RUN mkdir ./app
 COPY requirements.txt ./app
 
 WORKDIR ./app
-
-
-RUN apk update
-RUN apk add docker
-#musl-dev linux-headers gcc
 
 RUN pip install -r requirements.txt
 

@@ -7,11 +7,12 @@ logger = logging.getLogger(__name__)
 class BaseContainer:
 	
 	def __init__(self, cliUrl, containerName):
+		self.firstRun=True
 		self.cli = self.getCli(cliUrl)
 		self.containerName=containerName
 		self.container=self.getContainer()
 		self.baselineChangedFiles = []
-
+	
 	def deployContainer(self):
 		self.container=self.getContainer()
 
@@ -26,7 +27,8 @@ class BaseContainer:
 			return self.cli.containers.get(containerName)
 
 		except Exception as e:
-			logger.warn("unable to get container [%s] error[%s]" % (containerName, e))	
+			if not self.firstRun:
+				logger.warn("unable to get container [%s] error[%s]" % (containerName, e))	
 			return None
 
 	def stopContainer(self, targetContainer=None):
@@ -40,11 +42,14 @@ class BaseContainer:
 			container.stop()
 			logger.info("Stopped container [%s]" % container.name)
 		else:
-			logger.warn("Could not stop container, has it been initialised?")
+			if not self.firstRun:
+				logger.warn("Could not stop container, has it been initialised?")
 
 	def removeContainer(self):
 		if not self.container:
-			logger.warn("Could not remove container, has it been initialised?")
+			if not self.firstRun:
+				logger.warn("Could not remove container, has it been initialised?")
+			self.firstRun=False
 			return
 
 		try:
@@ -54,10 +59,13 @@ class BaseContainer:
 			logger.info("removed cotaniner [%s]" % self.containerName)
 		
 		except docker.errors.NotFound:
-			logger.warn("container [%s] not found to remove" % self.containerName)
+			if not self.firstRun:
+				logger.warn("container [%s] not found to remove" % self.containerName)
 		
 		except Exception as e:
 			logger.error("Unable to kill / remove container [%s]" % e)
+		
+		self.firstRun=False
 	
 
 	def redeployContainer(self):
