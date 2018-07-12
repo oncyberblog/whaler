@@ -14,5 +14,21 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/tmp/whaler:/var/tmp/whaler
       - /:/host
-
+    networks:
+      - default
   
+
+  victim: 
+    image: docker:stable-dind
+    privileged: true
+    restart: on-failure
+    ports:
+      - "2375:2375"
+    expose:
+      - "2375"
+    networks:
+      - default
+  
+
+networks:
+  default:
