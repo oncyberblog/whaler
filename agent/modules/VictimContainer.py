@@ -18,7 +18,7 @@ class VictimContainer(BaseContainer):
 			logger.debug("Deploying new VictimContainer [%s]" % Configuration().get("victimContainerName"))
 			container = self.cli.containers.run(	image=Configuration().get("victimContainerImage"),
 													name=Configuration().get("victimContainerName"),
-													#network=Configuration().get("victimNetworkName"),
+													network=Configuration().get("victimNetworkName"),
 													privileged=True,  
 													restart_policy={"Name": "on-failure"},
 													ports={'2375/tcp': 2375},
@@ -35,7 +35,7 @@ class VictimContainer(BaseContainer):
 			network = self.cli.networks.get(Configuration().get("victimNetworkName"))
 			logger.debug("got network [%s]" % network.name)
 			#network.disconnect(container)
-			network.connect(container, aliases=[Configuration().get("victimContainerAlias")])
+			#network.connect(container, aliases=[Configuration().get("victimContainerAlias")])
 			logger.debug("attached victim container to network [%s] with alias [%s]" % (network.name, Configuration().get("victimContainerName")))
 			
 			logger.info("deployed new container [%s]" % container.name)
