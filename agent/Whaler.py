@@ -38,7 +38,8 @@ class Whaler():
 
 	def onStart(self, container):
 		#let the container run for some time, to generate evidence
-		logger.info("New container reported [%s] will terminate in [%s] seconds" % (container.name, 
+		logger.info("New container reported [%s] image %s will terminate in [%s] seconds" % (container.name,
+										container.image.tags,
 										Configuration().get("maliciousContainerRunDurationSeconds")))
 		
 		outputFolder= "%s/%s/%s/%s/%s" % (	Configuration().get("dataDirectory"), 
@@ -46,7 +47,6 @@ class Whaler():
 											datetime.datetime.now().strftime('%H%M'),
 											container.image.tags[0],
 											container.name)
-
 
 		time.sleep(Configuration().get("maliciousContainerRunDurationSeconds"))
 		self.victimContainer.stopContainer(container)

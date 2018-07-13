@@ -13,6 +13,12 @@ class VictimContainer(BaseContainer):
 		BaseContainer.__init__(self, Configuration().get("dockerDaemonHostUrl"), Configuration().get("victimContainerName"))
 		self.victimCli=self.getCli(Configuration().get("dockerDaemonVictimUrl"))
 
+	def redeployContainer(self):
+		if Configuration().get("victimContainerDisableRedeploy"):
+			logger.info("Skipping redeploy container, disabled in configuration for testing")
+		else:
+			BaseContainer.redeployContainer(self)
+
 	def deployContainer(self):
 		try:
 			logger.debug("Deploying new VictimContainer [%s]" % Configuration().get("victimContainerName"))
@@ -31,12 +37,6 @@ class VictimContainer(BaseContainer):
 			time.sleep(10)
 			
 			self.resetBaselineFileChanges()
-			
-			#network = self.cli.networks.get(Configuration().get("victimNetworkName"))
-			#logger.debug("got network [%s]" % network.name)
-			#network.disconnect(container)
-			#network.connect(container, aliases=[Configuration().get("victimContainerAlias")])
-			#logger.debug("attached victim container to network [%s] with alias [%s]" % (network.name, Configuration().get("victimContainerName")))
 			
 			logger.info("deployed new container [%s]" % container.name)
 

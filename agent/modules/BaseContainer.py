@@ -1,4 +1,4 @@
-import os, datetime, logging
+import os, datetime, logging, hashlib
 
 import docker
 
@@ -38,9 +38,11 @@ class BaseContainer:
 			container=self.container
 
 		if container:
-			logger.debug("Stopping container [%s]" % container.name)
-			container.stop()
-			logger.info("Stopped container [%s]" % container.name)
+			try:
+				container.stop()
+				logger.info("Stopped container [%s]" % container.name)
+			except Exception as e:
+				logger.info("Unable to stop container - likely removed /completed already")
 		else:
 			if not self.firstRun:
 				logger.warn("Could not stop container, has it been initialised?")
@@ -76,24 +78,31 @@ class BaseContainer:
 		logger.info("Snapshotting image and container for [%s] to [%s]" % (container.name, filePath))
 
 		if not os.path.exists(filePath): os.makedirs(filePath)
+		
+		try:
+			image=container.image
+			outputFile=filePath + '/IMG_' + container.name + '-' + container.id + '.tar'
+			f = open(outputFile, 'w')
 
-		image=container.image
-		outputFile=filePath + '/IMG_' + container.name + '-' + container.id + '.tar'
-		f = open(outputFile, 'w')
+			for chunk in image.save():
+				f.write(chunk)
+			f.close()
 
-		for chunk in image.save():
-			f.write(chunk)
-		f.close()
-		logger.debug("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainerImage', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+			logger.debug("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainerImage', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+		except Exception as e:
+			logger.info("Failed to save image for container [%s]" % container.name)
+		
+		try:
+			outputFile=filePath + '/CNT_' + container.name + '-' + container.id + '.tar'
+			f = open(outputFile, 'w')
 
-		outputFile=filePath + '/CNT_' + container.name + '-' + container.id + '.tar'
-		f = open(outputFile, 'w')
+			for chunk in container.export():
+				f.write(chunk)
+			f.close()
+			logger.debug("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainer', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
+		except Exception as e:
+			logger.info("Failed to save container for [%s]" % container.name)
 
-		for chunk in container.export():
-			f.write(chunk)
-		f.close()
-		logger.debug("{'timestamp':'%s', source':'BaseContainer', 'action':'SavedContainer', 'containerId':'%s', 'imageId':'%s', 'file':'%s'}" % (datetime.datetime.now().isoformat(),container.id,image.tags,outputFile))
-	
 	def resetBaselineFileChanges(self):
 		self.baselineChangedFiles = self.getAllFileSystemChanges()
 		
