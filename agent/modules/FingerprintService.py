@@ -13,13 +13,13 @@ class FingerprintService:
 
     def isKnownContainer(self, container, filesChanged):
         fingerprint = self.getFingerprint(container, filesChanged)
-        if self.isExactMatch(fingerprint):
+        if self.isExactMatch(fingerprint, container.name):
             return True
 
-        if self.isFuzzyMatch(fingerprint):
+        if self.isFuzzyMatch(fingerprint, container.name):
             return True
         
-        logger.info('No match found, adding new fingerprint %s' % fingerprint)
+        logger.info('No match found for [%s], adding new fingerprint %s' % (container.name, fingerprint))
         self.fingerprints.append(fingerprint)
         return False
 
@@ -63,14 +63,14 @@ class FingerprintService:
 
         return fingerprint
 
-    def isExactMatch(self, fingerprint):
+    def isExactMatch(self, fingerprint, containerName):
         if fingerprint in self.fingerprints:
-            logger.info('Found exact match for %s' % fingerprint)
+            logger.info('Found exact match for [%s]: %s' % (containerName,fingerprint))
             return True
         else:
             return False
 
-    def isFuzzyMatch(self, fingerprint):
+    def isFuzzyMatch(self, fingerprint, containerName):
         cmdString1 = '%s %s' % (fingerprint['Cmd'], fingerprint['Entrypoint'])
         
         for oldFingerprint in self.fingerprints:
@@ -87,7 +87,7 @@ class FingerprintService:
                         fuzz.token_set_ratio(fingerprint['hostFileChanges'], oldFingerprint['hostFileChanges']) > Configuration().get("fingerprintFuzzyMatchThresholdScore")
                 )
             if match:
-                logger.info('Found fuzzy match. Current: %s Cached: %s' % (fingerprint, oldFingerprint))
+                logger.info('Found fuzzy match for [%s]. Current: %s Cached: %s' % (containerName, fingerprint, oldFingerprint))
                 return True
 
 

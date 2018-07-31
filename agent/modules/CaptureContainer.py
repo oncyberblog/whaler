@@ -1,7 +1,8 @@
-import shutil, logging
+import shutil, logging, json
 
 from Configuration import Configuration
 from BaseContainer import BaseContainer
+from PcapProcessor import PcapProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class CaptureContainer(BaseContainer):
 														volumes={Configuration().get("dataDirectory") + '/capture': {'bind': Configuration().get("dataDirectory") + '/capture', 'mode': 'rw'}},
 														network_mode="container:" + Configuration().get("victimContainerName"),
 														detach=True,
-														command='-W 5 -G 30 -w ' + Configuration().get("dataDirectory") + '/capture/capfile -i eth0',
+														command='-U -W 5 -G 30 -w ' + Configuration().get("dataDirectory") + '/capture/capfile -i eth0',
 														
 			)
 			self.container=container
@@ -28,11 +29,27 @@ class CaptureContainer(BaseContainer):
 		except Exception as e:
 			logger.error("failed deploying new container [%s]" %e)
 
-	def archiveCaptureFile(self, pCapFileStoragePath):
+	def getPcapFileReport(self):
+		report = PcapProcessor().getSummaryReport(Configuration().get("dataDirectory") + "/capture/capfile")
+		strReport = json.dumps(report, sort_keys=True,indent=4)
+		logging.debug(strReport)
+		return report
+
+	def saveCaptureReport(self, container, pCapFileStoragePath):
+			report=self.getPcapFileReport()
+			logger.info("Pcap Report for [%s] - %s" % (container.name, report))
+			strReport = json.dumps(report, sort_keys=True,indent=4)
+			with open(pCapFileStoragePath + "/captureReport.json", 'w') as outfile:
+				outfile.write(strReport)
+			
+			logger.info("Pcap Report for [%s] - written to [%s]" % (container.name, pCapFileStoragePath + "/captureReport.json"))
+
+	def archiveCaptureFileAndGenerateReport(self, container, pCapFileStoragePath):
 		try:
 			shutil.copyfile(Configuration().get("dataDirectory") + "/capture/capfile", pCapFileStoragePath + "/capture.pcap")
 			logger.info("Saved Pcap file(s) to %s/capture.pcap" % pCapFileStoragePath)
-		
+			self.saveCaptureReport(container, pCapFileStoragePath)
+			
 		except Exception as e:
 			logger.error("Error archiving capture file [%s]" % e)
 

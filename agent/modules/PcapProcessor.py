@@ -1,8 +1,8 @@
-import logging
+import logging, json, re, sys
 
 from Configuration import Configuration
 from scapy.all import *
-from scapy.layers import http
+
 
 #pip install python-geoip-geolite2
 #pip install netaddr
@@ -20,48 +20,106 @@ class PcapProcessor:
         if Configuration.instance:
             pass
 
-    def getHosts(self, pcapFilePath):
-        packets = rdpcap(pcapFilePath)
-        # Let's iterate through every packet
-        externalIps=set([])
-        attackerIp=None
+    def getDns(self, packets):
+        dnsRecords={}
+        for pkt in packets:
+            if pkt.haslayer(DNSRR):
+                if pkt[DNSRR].type ==1: #A record reply
+                    dnsRecords[pkt[DNSRR].rdata]=pkt[DNSRR].rrname[:-1]
+                    #print "%s = %s" % (pkt[DNSRR].rdata, dnsRecords[pkt[DNSRR].rdata])
+        return dnsRecords
+    
+    def isLocalIp(self, ipString):
+        if (IPAddress(ipString) in IPNetwork("172.16.0.0/12")):
+            return True
+    
+    def isDnsIp(self, ipString):
+        if (IPAddress(ipString) in IPNetwork("8.8.0.0/16")):
+            return True
+
+    def isFiltered(self, srcIp, dstIp, dnsRecords):
+        if self.isDnsIp(srcIp) or self.isDnsIp(dstIp):
+            #DNS
+            return True
+        if self.isLocalIp(srcIp) and self.isLocalIp(dstIp):
+            #LOCAL <> LOCAL traffic
+            return True
+        if srcIp in dnsRecords:
+            if ".docker.io" in dnsRecords[srcIp] or ".docker.com" in dnsRecords[srcIp]:
+                return True
+        if dstIp in dnsRecords:
+            if ".docker.io" in dnsRecords[dstIp] or ".docker.com" in dnsRecords[dstIp]:
+                return True
+        return False
+
+    def filterPackets(self, packets, dnsRecords):
+        filteredPackets=[]
         for pkt in packets:
             if IP in pkt:
-                ip_src=pkt[IP].src
-                ip_dst=pkt[IP].dst
-                port_src=pkt[TCP].sport
-                port_dst=pkt[TCP].dport
+                #print "%s" % pkt.show()
+                srcIp=pkt[IP].src
+                dstIp=pkt[IP].dst
+                if not self.isFiltered(srcIp, dstIp, dnsRecords):
+                    filteredPackets.append(pkt)
 
-                if (not IPAddress(ip_src) in IPNetwork("172.16.0.0/12")):
-                    externalIps.add("%s:%s (%s)" % (ip_src,port_src, self.getHostName(ip_src)))
-                if (not IPAddress(ip_dst) in IPNetwork("172.16.0.0/12")):
-                    externalIps.add("%s:%s (%s)" % (ip_dst,port_dst, self.getHostName(ip_dst)))
+        return filteredPackets  
 
+
+    def getAttackerIp(self, packets, dnsRecords):
+        attackerIp="UNKNOWN_IP"
+        for pkt in packets:
+            if TCP in pkt and pkt[TCP].dport==2375 and not self.isFiltered(pkt[IP].src, pkt[IP].dst, dnsRecords):
+                attackerIp=pkt[IP].src
+        return attackerIp
+
+    def getSummaryReport(self, pcapFilePath):
+        
+        packets = rdpcap(pcapFilePath)
+
+        dnsRecords=self.getDns(packets)
+        packets = self.filterPackets(packets, dnsRecords)
+
+        # get the Attacker IP address
+        attackerIp = self.getAttackerIp(packets, dnsRecords)
+        print "attacker ip is %s " % attackerIp
+        
+        contactedIps={}
+        report={'attackerIp': attackerIp,
+                    'dnsQueries': dnsRecords,
+                    'contactedIps': contactedIps
+        }
+
+        for pkt in packets:
+            if IP in pkt:
+                srcIp=pkt[IP].src
+                dstIp=pkt[IP].dst
                 
-                txt= pkt.show(dump=True)
-                if port_dst==2375 and 'images/create' in txt:
-                    attacherIp=ip_src
-                    print pkt.show()
-                    #print pkt[Raw].load
+                if srcIp not in contactedIps and not self.isLocalIp(srcIp):
+                    contactedIps[srcIp]= {}
+                if dstIp not in contactedIps and not self.isLocalIp(dstIp):
+                    contactedIps[dstIp]= {}
 
-            
-        print externalIps
-        return
-        match = geolite2.lookup('52.17.140.163')
-        if match:
-            print match.country
-            print match.continent
-            print match.timezone
-        print match
+        for ipAddress in contactedIps:
+            #add geo-location data
+            match = geolite2.lookup(ipAddress)
+            if match:
+                contactedIps[ipAddress]['country']=match.country
+                contactedIps[ipAddress]['continent']=match.continent
+                contactedIps[ipAddress]['timezone']=match.timezone
+                contactedIps[ipAddress]['location']=match.location
 
-    def getHostName(self, ipString):
-        #print "lookign up %s" % ipString
-        try:
-            return socket.gethostbyaddr(ipString)[0]
-        except Exception as e:
-            return "unknown-host"
+            if ipAddress in dnsRecords:
+                contactedIps[ipAddress]['domain']=dnsRecords[ipAddress]
+            else:
+                contactedIps[ipAddress]['domain']='unknown'
 
+        return report
+                
+                    
+if __name__ == "__main__":
+    fileName=sys.argv[1]
+    print "loading file %s" % fileName
+    report = PcapProcessor().getSummaryReport(fileName)
+    strReport = json.dumps(report, sort_keys=True,indent=4)
+    print strReport
 
-
-pcapProcessor=PcapProcessor()
-pcapProcessor.getHosts("/var/tmp/whaler/20180713/1603/hello-world:latest/loving_almeida/capture.pcap")
