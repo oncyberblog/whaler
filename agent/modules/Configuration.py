@@ -30,7 +30,7 @@ class Configuration:
             self.config={'dataDirectory':WHALER_DATA_DIR,
                             'dockerDaemonHostUrl':'unix://var/run/docker.sock',
                             'dockerDaemonVictimUrl':'tcp://whaler_victim:2375',
-                            'maliciousContainerRunDurationSeconds': 120,
+                            'maliciousContainerRunDurationSeconds': 30,
                             'fingerprintFuzzyMatchThresholdScore': 85,
                             'captureContainerName': 'whaler_capture',
                             'captureContainerImage': 'whaler/capture',
