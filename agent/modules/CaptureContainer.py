@@ -1,4 +1,4 @@
-import shutil, logging, json
+import shutil, logging, json, time
 
 from Configuration import Configuration
 from BaseContainer import BaseContainer
@@ -18,13 +18,17 @@ class CaptureContainer(BaseContainer):
 														name=Configuration().get("captureContainerName"), 
 														restart_policy={"Name": "on-failure"},
 														volumes={Configuration().get("dataDirectory") + '/capture': {'bind': Configuration().get("dataDirectory") + '/capture', 'mode': 'rw'}},
+														#network_mode="host",
 														network_mode="container:" + Configuration().get("victimContainerName"),
+														#network="whaler_default",
 														detach=True,
 														command='-U -W 5 -G 30 -w ' + Configuration().get("dataDirectory") + '/capture/capfile -i eth0',
 														
 			)
+			
 			self.container=container
 			logger.info("deployed new container [%s]" % container.name)
+			
 
 		except Exception as e:
 			logger.error("failed deploying new container [%s]" %e)

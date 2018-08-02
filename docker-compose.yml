@@ -6,7 +6,7 @@ services:
     image: whaler/agent
     restart: on-failure
     environment:
-        - WHALER_DATA_DIR
+        - WHALER_DATA_DIR=/var/tmp/whaler
         - LOGZIO_TOKEN
         - LOGZIO_ENV
         - LOGZIO_ZONE=us
@@ -14,4 +14,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/tmp/whaler:/var/tmp/whaler
       - /:/host
-
+  capture:
+    container_name: whaler_capture
+    build: ./capture
+    image: whaler/capture
+    restart: on-failure

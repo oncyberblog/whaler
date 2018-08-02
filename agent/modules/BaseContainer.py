@@ -40,6 +40,7 @@ class BaseContainer:
 		if container:
 			try:
 				container.stop()
+				container.wait()
 				logger.info("Stopped container [%s]" % container.name)
 			except Exception as e:
 				logger.info("Unable to stop container - likely removed /completed already")
@@ -56,6 +57,7 @@ class BaseContainer:
 
 		try:
 			logger.debug("Removing container [%s]" % self.containerName)
+			self.container.stop()
 			self.container.remove(force=True)
 			self.container=None
 			logger.info("removed cotaniner [%s]" % self.containerName)

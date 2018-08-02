@@ -29,6 +29,7 @@ class VictimContainer(BaseContainer):
 													restart_policy={"Name": "on-failure"},
 													ports={'2375/tcp': 2375},
 													detach=True,
+													dns=['8.8.8.8', '8.8.4.4']
 														
 			)
 			self.container=container

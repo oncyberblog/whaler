@@ -33,7 +33,7 @@ class Configuration:
                             'maliciousContainerRunDurationSeconds': 120,
                             'fingerprintFuzzyMatchThresholdScore': 85,
                             'captureContainerName': 'whaler_capture',
-                            'captureContainerImage': 'marsmensch/tcpdump',
+                            'captureContainerImage': 'whaler/capture',
                             'victimContainerName': 'whaler_victim',
                             'victimContainerAlias': 'whaler_victim',
                             'victimContainerImage': 'docker:stable-dind',
