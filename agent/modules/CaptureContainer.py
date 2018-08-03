@@ -1,4 +1,4 @@
-import shutil, logging, json, time
+import shutil, logging, json, time, sys, traceback
 
 from Configuration import Configuration
 from BaseContainer import BaseContainer
@@ -40,6 +40,8 @@ class CaptureContainer(BaseContainer):
 		return report
 
 	def saveCaptureReport(self, container, pCapFileStoragePath):
+			logger.info("here!")
+			logger.info("Generating Pcap Report for [%s]" % (container.name))
 			report=self.getPcapFileReport()
 			logger.info("Pcap Report for [%s] - %s" % (container.name, report))
 			strReport = json.dumps(report, sort_keys=True,indent=4)
@@ -51,10 +53,11 @@ class CaptureContainer(BaseContainer):
 	def archiveCaptureFileAndGenerateReport(self, container, pCapFileStoragePath):
 		try:
 			shutil.copyfile(Configuration().get("dataDirectory") + "/capture/capfile", pCapFileStoragePath + "/capture.pcap")
-			logger.info("Saved Pcap file(s) to %s/capture.pcap" % pCapFileStoragePath)
+			logger.info(">>Saved Pcap file(s) to %s/capture.pcap" % pCapFileStoragePath)
 			self.saveCaptureReport(container, pCapFileStoragePath)
 			
 		except Exception as e:
 			logger.error("Error archiving capture file [%s]" % e)
+			traceback.print_exc(file=sys.stdout)
 
 

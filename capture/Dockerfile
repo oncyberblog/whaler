@@ -1,6 +1,6 @@
-FROM alpine
+FROM python:2-alpine
 
-RUN apk add tcpdump==4.9.2-r3
+RUN apk add tcpdump==4.9.2-r1
 
 RUN mkdir ./app
 COPY wrapper.sh ./app

@@ -20,98 +20,67 @@ class PcapProcessor:
         if Configuration.instance:
             pass
 
-    def getDns(self, packets):
-        dnsRecords={}
-        for pkt in packets:
-            if pkt.haslayer(DNSRR):
-                if pkt[DNSRR].type ==1: #A record reply
-                    dnsRecords[pkt[DNSRR].rdata]=pkt[DNSRR].rrname[:-1]
-                    #print "%s = %s" % (pkt[DNSRR].rdata, dnsRecords[pkt[DNSRR].rdata])
-        return dnsRecords
+    def processPacket(self, packet):
+        print packet.summary()
+
+    def setAttackerIP(self, packet):
+        self.attackerIp=packet[IP].src
     
-    def isLocalIp(self, ipString):
-        if (IPAddress(ipString) in IPNetwork("172.16.0.0/12")):
-            return True
+    def addContactedIps(self, packet):
+        if self.scanningDetected or not IP in packet:
+            return
+        if not packet[IP].dst in self.contactedIps:
+            self.contactedIps[packet[IP].dst]= {}
+           
+            if len(self.contactedIps.keys()) >= 100:
+                self.scanningDetected = True
+                print "set scanning detected %s" % self.scanningDetected
+                print self.isScanningDetected()
     
-    def isDnsIp(self, ipString):
-        if (IPAddress(ipString) in IPNetwork("8.8.0.0/16")):
-            return True
+    def addDns(self, packet):
+        if packet.haslayer(DNSRR):
+                if packet[DNSRR].type ==1: #A record reply
+                    self.dnsRecords[packet[DNSRR].rdata]=packet[DNSRR].rrname[:-1]
 
-    def isFiltered(self, srcIp, dstIp, dnsRecords):
-        if self.isDnsIp(srcIp) or self.isDnsIp(dstIp):
-            #DNS
-            return True
-        if self.isLocalIp(srcIp) and self.isLocalIp(dstIp):
-            #LOCAL <> LOCAL traffic
-            return True
-        if srcIp in dnsRecords:
-            if ".docker.io" in dnsRecords[srcIp] or ".docker.com" in dnsRecords[srcIp]:
-                return True
-        if dstIp in dnsRecords:
-            if ".docker.io" in dnsRecords[dstIp] or ".docker.com" in dnsRecords[dstIp]:
-                return True
-        return False
-
-    def filterPackets(self, packets, dnsRecords):
-        filteredPackets=[]
-        for pkt in packets:
-            if IP in pkt:
-                #print "%s" % pkt.show()
-                srcIp=pkt[IP].src
-                dstIp=pkt[IP].dst
-                if not self.isFiltered(srcIp, dstIp, dnsRecords):
-                    filteredPackets.append(pkt)
-
-        return filteredPackets  
-
-
-    def getAttackerIp(self, packets, dnsRecords):
-        attackerIp="UNKNOWN_IP"
-        for pkt in packets:
-            if TCP in pkt and pkt[TCP].dport==2375 and not self.isFiltered(pkt[IP].src, pkt[IP].dst, dnsRecords):
-                attackerIp=pkt[IP].src
-        return attackerIp
+    def isScanningDetected(self):
+        return self.scanningDetected
 
     def getSummaryReport(self, pcapFilePath):
-        
-        packets = rdpcap(pcapFilePath)
 
-        dnsRecords=self.getDns(packets)
-        packets = self.filterPackets(packets, dnsRecords)
-
-        # get the Attacker IP address
-        attackerIp = self.getAttackerIp(packets, dnsRecords)
-        print "attacker ip is %s " % attackerIp
-        
-        contactedIps={}
-        report={'attackerIp': attackerIp,
-                    'dnsQueries': dnsRecords,
-                    'contactedIps': contactedIps
+        self.attackerIp="UNKNOWN"
+        self.dnsRecords={}
+        self.contactedIps={}
+        report={'attackerIp': self.attackerIp,
+                    'dnsQueries': self.dnsRecords,
+                    'contactedIps': self.contactedIps
         }
 
-        for pkt in packets:
-            if IP in pkt:
-                srcIp=pkt[IP].src
-                dstIp=pkt[IP].dst
-                
-                if srcIp not in contactedIps and not self.isLocalIp(srcIp):
-                    contactedIps[srcIp]= {}
-                if dstIp not in contactedIps and not self.isLocalIp(dstIp):
-                    contactedIps[dstIp]= {}
-
-        for ipAddress in contactedIps:
+        print "Loading and parsing file %s...." % pcapFilePath
+        
+        #determine attacker
+        sniff(offline=pcapFilePath, filter="(dst net 172 and dst port 2375) and not src net 172", prn=lambda x: self.setAttackerIP(x), store=0)
+        
+        #get dns records
+        sniff(offline=pcapFilePath, filter="port 53", prn=lambda x: self.addDns(x), store=0)
+        
+        #get contacted IPs (outbound comms)
+        self.scanningDetected=False
+        sniff(offline=pcapFilePath, filter="dst net not 172 and tcp or udp", prn=lambda x: self.addContactedIps(x), stop_filter=lambda x: self.isScanningDetected(), store=0)
+        print "contactedIps IP is %s" % self.contactedIps
+        
+        for ipAddress in self.contactedIps:
             #add geo-location data
             match = geolite2.lookup(ipAddress)
             if match:
-                contactedIps[ipAddress]['country']=match.country
-                contactedIps[ipAddress]['continent']=match.continent
-                contactedIps[ipAddress]['timezone']=match.timezone
-                contactedIps[ipAddress]['location']=match.location
+                self.contactedIps[ipAddress]['country']=match.country
+                self.contactedIps[ipAddress]['continent']=match.continent
+                self.contactedIps[ipAddress]['timezone']=match.timezone
+                self.contactedIps[ipAddress]['location']=match.location
 
-            if ipAddress in dnsRecords:
-                contactedIps[ipAddress]['domain']=dnsRecords[ipAddress]
+            if ipAddress in self.dnsRecords:
+                self.contactedIps[ipAddress]['domain']=self.dnsRecords[ipAddress]
             else:
-                contactedIps[ipAddress]['domain']='unknown'
+                self.contactedIps[ipAddress]['domain']='unknown'
 
         return report
                 
