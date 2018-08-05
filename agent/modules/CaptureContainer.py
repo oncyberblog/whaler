@@ -22,7 +22,7 @@ class CaptureContainer(BaseContainer):
 														network_mode="container:" + Configuration().get("victimContainerName"),
 														#network="whaler_default",
 														detach=True,
-														command='-U -W 5 -G 30 -w ' + Configuration().get("dataDirectory") + '/capture/capfile -i eth0',
+														command='-U -W 1 -C 50 -w ' + Configuration().get("dataDirectory") + '/capture/capfile -i eth0',
 														
 			)
 			
