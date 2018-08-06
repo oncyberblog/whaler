@@ -39,8 +39,10 @@ class PcapProcessor:
     
     def addDns(self, packet):
         if packet.haslayer(DNSRR):
-                if packet[DNSRR].type ==1: #A record reply
-                    self.dnsRecords[packet[DNSRR].rdata]=packet[DNSRR].rrname[:-1]
+            for i in range(packet[DNS].ancount):
+                dnsrr=packet[DNS].an[i]
+                self.dnsRecords[dnsrr.rdata]=dnsrr.rrname[:-1]
+                
 
     def isScanningDetected(self):
         return self.scanningDetected
@@ -59,7 +61,8 @@ class PcapProcessor:
         
         #determine attacker
         sniff(offline=pcapFilePath, filter="(dst net 172 and dst port 2375) and not src net 172", prn=lambda x: self.setAttackerIP(x), store=0)
-        
+        report['attackerIp'] = self.attackerIp
+
         #get dns records
         sniff(offline=pcapFilePath, filter="port 53", prn=lambda x: self.addDns(x), store=0)
         
@@ -68,7 +71,7 @@ class PcapProcessor:
         sniff(offline=pcapFilePath, filter="dst net not 172 and tcp or udp", prn=lambda x: self.addContactedIps(x), stop_filter=lambda x: self.isScanningDetected(), store=0)
         print "contactedIps IP is %s" % self.contactedIps
         
-        for ipAddress in self.contactedIps:
+        for ipAddress in self.contactedIps.keys():
             #add geo-location data
             match = geolite2.lookup(ipAddress)
             if match:
@@ -81,6 +84,20 @@ class PcapProcessor:
                 self.contactedIps[ipAddress]['domain']=self.dnsRecords[ipAddress]
             else:
                 self.contactedIps[ipAddress]['domain']='unknown'
+            
+            #remove noise from docker and dns
+            if ipAddress in ['8.8.8.8','8.8.4.4']:
+                del(self.contactedIps[ipAddress])
+            elif self.contactedIps[ipAddress]['domain'].endswith('docker.com'):
+                del(self.contactedIps[ipAddress])
+                del(self.dnsRecords[ipAddress])
+            elif self.contactedIps[ipAddress]['domain'].endswith('docker.io'):
+                del(self.contactedIps[ipAddress])
+                del(self.dnsRecords[ipAddress])
+
+        for dnsRecord in self.dnsRecords.keys():
+            if self.dnsRecords[dnsRecord].endswith('docker.com') or self.dnsRecords[dnsRecord].endswith('docker.io'):
+                del(self.dnsRecords[dnsRecord])
 
         return report
                 
