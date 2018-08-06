@@ -1,27 +1,18 @@
-import logging, json, re, sys
+import logging, json, re, sys, datetime
 
 from Configuration import Configuration
+
 from scapy.all import *
 
-
-#pip install python-geoip-geolite2
-#pip install netaddr
-
 from geoip import geolite2
-from netaddr import IPNetwork, IPAddress
-
-import socket
 
 logger = logging.getLogger(__name__)
 
 class PcapProcessor:
 
-    def __init__(self):
-        if Configuration.instance:
-            pass
-
-    def processPacket(self, packet):
-        print packet.summary()
+    def __init__(self, containerName, pcapFilePath):
+        self.containerName = containerName
+        self.pcapFilePath=pcapFilePath
 
     def setAttackerIP(self, packet):
         self.attackerIp=packet[IP].src
@@ -34,8 +25,6 @@ class PcapProcessor:
            
             if len(self.contactedIps.keys()) >= 100:
                 self.scanningDetected = True
-                print "set scanning detected %s" % self.scanningDetected
-                print self.isScanningDetected()
     
     def addDns(self, packet):
         if packet.haslayer(DNSRR):
@@ -47,29 +36,30 @@ class PcapProcessor:
     def isScanningDetected(self):
         return self.scanningDetected
 
-    def getSummaryReport(self, pcapFilePath):
+    def getSummaryReport(self):
 
         self.attackerIp="UNKNOWN"
         self.dnsRecords={}
         self.contactedIps={}
-        report={'attackerIp': self.attackerIp,
+        report={'reportTimestamp': datetime.now().isoformat(),
+                    'containerName': self.containerName,
+                    'attackerIp': self.attackerIp,
                     'dnsQueries': self.dnsRecords,
                     'contactedIps': self.contactedIps
         }
 
-        print "Loading and parsing file %s...." % pcapFilePath
+        logger.debug("Loading and parsing file %s...." % self.pcapFilePath)
         
         #determine attacker
-        sniff(offline=pcapFilePath, filter="(dst net 172 and dst port 2375) and not src net 172", prn=lambda x: self.setAttackerIP(x), store=0)
+        sniff(offline=self.pcapFilePath, filter="(dst net 172 and dst port 2375) and not src net 172", prn=lambda x: self.setAttackerIP(x), store=0)
         report['attackerIp'] = self.attackerIp
 
         #get dns records
-        sniff(offline=pcapFilePath, filter="port 53", prn=lambda x: self.addDns(x), store=0)
+        sniff(offline=self.pcapFilePath, filter="port 53", prn=lambda x: self.addDns(x), store=0)
         
         #get contacted IPs (outbound comms)
         self.scanningDetected=False
-        sniff(offline=pcapFilePath, filter="dst net not 172 and tcp or udp", prn=lambda x: self.addContactedIps(x), stop_filter=lambda x: self.isScanningDetected(), store=0)
-        print "contactedIps IP is %s" % self.contactedIps
+        sniff(offline=self.pcapFilePath, filter="dst net not 172 and tcp or udp", prn=lambda x: self.addContactedIps(x), stop_filter=lambda x: self.isScanningDetected(), store=0)
         
         for ipAddress in self.contactedIps.keys():
             #add geo-location data
@@ -105,7 +95,7 @@ class PcapProcessor:
 if __name__ == "__main__":
     fileName=sys.argv[1]
     print "loading file %s" % fileName
-    report = PcapProcessor().getSummaryReport(fileName)
+    report = PcapProcessor('test_container', fileName).getSummaryReport()
     strReport = json.dumps(report, sort_keys=True,indent=4)
     print strReport
 

@@ -33,8 +33,8 @@ class CaptureContainer(BaseContainer):
 		except Exception as e:
 			logger.error("failed deploying new container [%s]" %e)
 
-	def getPcapFileReport(self):
-		report = PcapProcessor().getSummaryReport(Configuration().get("dataDirectory") + "/capture/capfile")
+	def getPcapFileReport(self, containerName):
+		report = PcapProcessor(containerName, Configuration().get("dataDirectory") + "/capture/capfile").getSummaryReport()
 		strReport = json.dumps(report, sort_keys=True,indent=4)
 		logging.debug(strReport)
 		return report
@@ -42,7 +42,7 @@ class CaptureContainer(BaseContainer):
 	def saveCaptureReport(self, container, pCapFileStoragePath):
 			logger.info("here!")
 			logger.info("Generating Pcap Report for [%s]" % (container.name))
-			report=self.getPcapFileReport()
+			report=self.getPcapFileReport(container.name)
 			logger.info("Pcap Report for [%s] - %s" % (container.name, report))
 			strReport = json.dumps(report, sort_keys=True,indent=4)
 			with open(pCapFileStoragePath + "/captureReport.json", 'w') as outfile:
