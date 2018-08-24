@@ -26,11 +26,8 @@ class Whaler():
 		self.victimContainer=VictimContainer()
 		self.captureContainer=CaptureContainer()
 
-		#self.resetNetworkStack()
-
 		self.victimContainer.redeployContainer()
 		self.victimContainer.resetBaselineFileChanges()
-
 		
 		self.captureContainer.redeployContainer()
 
@@ -74,8 +71,6 @@ class Whaler():
 			logger.info("Found fingerprint match, will not archive container, or pcap - only pcap report")
 
 			self.captureContainer.saveCaptureReport(container, outputFolder)
-			
-			#self.resetNetworkStack()
 			self.victimContainer.redeployContainer()
 			self.captureContainer.redeployContainer()
 		else:
@@ -94,25 +89,9 @@ class Whaler():
 
 			#restart capture container and save pcap
 			self.victimContainer.snapshotVictimContainer(outputFolder)
-			#self.resetNetworkStack()
 			self.victimContainer.redeployContainer()
 			self.captureContainer.redeployContainer()
 		
-	
-	def resetNetworkStack(self):
-		network = self.hostCli.networks.get("whaler_default")
-		
-		containers=network.containers
-		for container in containers:
-			network.disconnect(container)
-			logger.info("disconnected %s" % container.name)
-		network.remove()
-		logger.info("removed %s" % network.name)
-		network=self.hostCli.networks.create("whaler_default")
-		logger.info("re-created network")
-		for container in containers:
-			network.connect(container)
-			logger.info("connected %s" % container.name)
 		
 
 

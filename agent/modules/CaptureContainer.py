@@ -40,7 +40,6 @@ class CaptureContainer(BaseContainer):
 		return report
 
 	def saveCaptureReport(self, container, pCapFileStoragePath):
-			logger.info("here!")
 			logger.info("Generating Pcap Report for [%s]" % (container.name))
 			report=self.getPcapFileReport(container.name)
 			logger.info("Pcap Report for [%s] - %s" % (container.name, report))
