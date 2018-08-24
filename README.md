@@ -1,6 +1,6 @@
 # Whaler
 
-Whaler is a Docker Daemon honeypot. It exposes an insecure Docker Daemon API with the intention of attracting and capturing attempts to run malicious containers.
+Whaler is a Docker Daemon honeypot / sandbox. It exposes an insecure Docker Daemon API with the intention of attracting and capturing attempts to run malicious containers.
  
 Whaler runs entirely in Docker and at the heart of the solution is a Docker in Docker (DinD) container which serves as the honeypot.
 
@@ -20,19 +20,17 @@ A Docker in Docker container, with an insecure Daemon exposed on port 2375. No c
 ### agent 
 The controller performs the following key functions:
 remotely monitors the victim container for Docker events via the Docker API on port 2375
- - runs the 'EventWatcher' process - when a 'start' container event is observed, it logs full details of the container being started, including startup command and parameters
- - runs the 'ContainerWatcher' process - checks for new containers every 5 seconds. When detected:
-
-    - stops the container after a configurable delay (60 seconds)
-    - performs a 'diff' against the original image
-    - creates a tar archive of the container and image in the host /tmp folder
-    - removes the stopped container
+ - it logs full details of the container being started, including startup command and parameters
+ - captures all traffic into and out of the victim container, producing a simple summary report
+ - stops the container after a configurable delay (30 seconds)
+ - performs a 'diff' against the original DinD image to help identify container escape attempts 
+ - creates a tar archive of the DinD and malicious containers and images in the host folder
+ - resets the system for the next attack
 
  Events and information are logged to stdout, for collection by the logging container and visualisation in Logz.io 
 
 ### capture
-Runs a tcpdump to capture a series of rolling pcap files from the victim container interface for future analysis. Currently hard coded to store 5 x ~ 500MB files on a rotating basis.
-
+Runs a tcpdump to capture a series of rolling pcap files from the victim container interface for future analysis. Currently hard coded to store up to 500MB files on a rotating basis.
 
 ### logging
 provides a simple docker integration with logz.io so key data from the hosts can be logged to ELK for analysis.
@@ -49,30 +47,23 @@ First launch a new cloud based Ubuntu image, for example in Azure or AWS. Ensure
 SSH into your new server and execute the following:
 
 ```
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-sudo apt-get update
-sudo apt-get install -y docker-ce docker-compose
-sudo usermod -aG docker ubuntu
-sudo apt-get upgrade
-git clone https://github.com/oncyberblog/whaler.git
-sudo systemctl enable docker
-```
-
-next `sudo reboot` your machine and log back in and `cd whaler`.
-
-edit the docker-compose.yml file to add your Logz.io API key: 
+curl https://raw.githubusercontent.com/oncyberblog/whaler/master/get-whaler.sh | sudo sh
 
 ```
- - LOGZIO_TOKEN=<API KEY>
-```
 
-If you do not intend to use logz.io, then instead use the `docker-compose-nologging.yml` file by replacing the `docker-compose.yml` file with this file.
+The server will reboot once complete, next log back in and `cd whaler`.
 
-build and execute the solution using:
+set your logz.io key and environment with
 
 ```
-docker-compose build && docker-compose up -d
+export LOGZIO_TOKEN=<API KEY>
+export LOGZIO_ENV=whaler
+```
+
+reset and re-deploy the solution:
+
+```
+./reset-redeploy -d
 ```
 
 Logs should start shipping within a few minutes. You can test the setup by accessing the Daemon remotely from another machine with docker installed:
