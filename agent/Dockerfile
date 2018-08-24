@@ -8,7 +8,7 @@ COPY requirements.txt ./app
 WORKDIR ./app
 
 RUN pip install -r requirements.txt
-RUN apk add tcpdump==4.9.2-r1
+RUN apk add tcpdump
 COPY . ./app
 
 EXPOSE 2375
