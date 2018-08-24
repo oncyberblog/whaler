@@ -72,5 +72,5 @@ Logs should start shipping within a few minutes. You can test the setup by acces
 docker -H=<IP address of your Whaler server> run hello-world
 ```
 
-You will see corresponding events in logz.io and note the container and image is archived to /tmp on the honeypot server.
+You will see corresponding events in logz.io and note the container and image, local logs and all data is archived to /var/tmp/whaler on the honeypot server.
 
