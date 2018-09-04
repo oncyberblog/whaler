@@ -92,6 +92,8 @@ class Whaler():
 			self.victimContainer.redeployContainer()
 			self.captureContainer.redeployContainer()
 		
+		self.victimCli.volumes.prune()
+		self.hostCli.volumes.prune()
 		
 
 

@@ -61,6 +61,7 @@ class BaseContainer:
 			self.container.remove(force=True)
 			self.container=None
 			logger.info("removed cotaniner [%s]" % self.containerName)
+			self.cli.volumes.prune()
 		
 		except docker.errors.NotFound:
 			if not self.firstRun:
