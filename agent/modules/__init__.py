@@ -5,18 +5,23 @@ from Configuration import Configuration
 LOG_FILE=Configuration().get("dataDirectory") + "/whaler.log"
 
 #logging - to file and console
+logger=logging.getLogger('')
+logger.setLevel(logging.DEBUG)
 
+fileHandler = logging.handlers.RotatingFileHandler(filename=LOG_FILE, backupCount=1000)
+fileHandler.setLevel(logging.DEBUG)
 
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(module)s - %(message)s', filename=LOG_FILE,level=logging.DEBUG, filemode='w')
+consoleHandler=logging.StreamHandler()
+consoleHandler.setLevel(logging.INFO)
 
-#add console
-console = logging.StreamHandler()
-console.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(message)s'))
-console.setLevel(logging.INFO)
-logging.getLogger('').addHandler(console)
+formatter=logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(message)s')
+fileHandler.setFormatter(formatter)
+consoleHandler.setFormatter(formatter)
+
+logger.addHandler(fileHandler)
+logger.addHandler(consoleHandler)
 
 #roll logs
-handler = logging.handlers.RotatingFileHandler(filename=LOG_FILE, backupCount=1000)
-logging.getLogger('').addHandler(handler)
+
 if os.path.isfile(LOG_FILE):
-    handler.doRollover()
+    fileHandler.doRollover()
