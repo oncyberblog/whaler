@@ -75,16 +75,20 @@ class FingerprintService:
         
         for oldFingerprint in self.fingerprints:
             cmdString2 = '%s %s' % (oldFingerprint['Cmd'], oldFingerprint['Entrypoint'])
+            cmdFuzzRatio = fuzz.token_set_ratio(cmdString1, cmdString2)
+            logger.debug('Cmd fuzz ratio is %s' % cmdFuzzRatio) 
             
             match =  (fingerprint['MountsSource'] == oldFingerprint['MountsSource'] and 
                                                     fingerprint['Tty'] == oldFingerprint['Tty'] and 
                                                     fingerprint['Image'] == oldFingerprint['Image'] and 
-                                                    fuzz.token_set_ratio(cmdString1, cmdString2) > Configuration().get("fingerprintFuzzyMatchThresholdScore")
+                                                    cmdFuzzRatio > Configuration().get("fingerprintFuzzyMatchThresholdScore")
             )
             #host file changes are different - check for fuzzy match
             if fingerprint['hostFileChanges'] != oldFingerprint['hostFileChanges']:
+                hostFileFuzzRatio = fuzz.token_set_ratio(fingerprint['hostFileChanges'], oldFingerprint['hostFileChanges'])
+                logger.debug('Host file fuzz ratio is %s' % hostFileFuzzRatio) 
                 match = (match and 
-                        fuzz.token_set_ratio(fingerprint['hostFileChanges'], oldFingerprint['hostFileChanges']) > Configuration().get("fingerprintFuzzyMatchThresholdScore")
+                        hostFileFuzzRatio > Configuration().get("fingerprintFuzzyMatchThresholdScore")
                 )
             if match:
                 logger.info('Found fuzzy match for [%s]. Current: %s Cached: %s' % (containerName, fingerprint, oldFingerprint))
