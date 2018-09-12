@@ -1,4 +1,4 @@
-import logging, json, os
+import logging, json, os, re
 
 from Configuration import Configuration
 
@@ -72,9 +72,14 @@ class FingerprintService:
 
     def isFuzzyMatch(self, fingerprint, containerName):
         cmdString1 = '%s %s' % (fingerprint['Cmd'], fingerprint['Entrypoint'])
+        #replace randomised hex 6+chars
+        cmdString1 = re.sub("[a-f0-9]{6,}", "XXXXXXXXXX", cmdString1)
         
         for oldFingerprint in self.fingerprints:
             cmdString2 = '%s %s' % (oldFingerprint['Cmd'], oldFingerprint['Entrypoint'])
+            #replace randomised hex 6+chars
+            cmdString2 = re.sub("[a-f0-9]{6,}", "XXXXXXXXXX", cmdString2)
+
             cmdFuzzRatio = fuzz.token_set_ratio(cmdString1, cmdString2)
             logger.debug('Cmd fuzz ratio is %s' % cmdFuzzRatio) 
             
