@@ -59,7 +59,7 @@ class Whaler():
 
 
 		#check fingerprints - match explicitly, or use fuzzy logic for dynamic scripts / filenames
-		if self.fingerprintService.isKnownContainer(container, changedFiles):
+		if self.fingerprintService.isKnownContainer(container, changedFiles, outputFolder):
 			logger.info("%s" % {	'containerName': container.name,
 									'timestamp': datetime.datetime.now().isoformat(), 
 									'source': 'Whaler', 

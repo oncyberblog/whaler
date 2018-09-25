@@ -11,8 +11,9 @@ class FingerprintService:
     def __init__(self):
         self.fingerprints = self.loadFingerprints()
 
-    def isKnownContainer(self, container, filesChanged):
+    def isKnownContainer(self, container, filesChanged, outputFolder):
         fingerprint = self.getFingerprint(container, filesChanged)
+        self.storeFingerprint(fingerprint, outputFolder)
         if self.isExactMatch(fingerprint, container.name):
             return True
 
@@ -31,6 +32,12 @@ class FingerprintService:
         
         logger.info('Intialised known Fingerprint set [%s] items' % len(fingerprints))
         return fingerprints
+
+    def storeFingerprint(self, fingerprint, outputFolder):
+        with open(outputFolder + '/fingerprint.json', 'w') as outfile:
+            json.dump(fingerprint, outfile)
+
+
 
     def storeFingerprints(self):
         with open(Configuration().get("dataDirectory") + '/fingerprints.json', 'w') as outfile:
