@@ -52,8 +52,7 @@ class FingerprintService:
         if container.attrs['Config']['Cmd']:
             fingerprint['Cmd'] = (' ').join(container.attrs['Config']['Cmd'])
         
-        if container.attrs['Config']['Image']:
-            fingerprint['Image'] = container.attrs['Config']['Image']
+        fingerprint['Image'] = container.image.tags[0]
         
         if container.attrs['Config']['Entrypoint']:
             fingerprint['Entrypoint'] = (' ').join(container.attrs['Config']['Entrypoint'])
