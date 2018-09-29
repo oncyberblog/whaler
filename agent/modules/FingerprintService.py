@@ -11,16 +11,14 @@ class FingerprintService:
     def __init__(self):
         self.fingerprints = self.loadFingerprints()
 
-    def isKnownContainer(self, container, filesChanged, outputFolder):
-        fingerprint = self.getFingerprint(container, filesChanged)
-        self.storeFingerprint(fingerprint, outputFolder)
-        if self.isExactMatch(fingerprint, container.name):
+    def isKnownContainer(self, fingerprint):
+        if self.isExactMatch(fingerprint):
             return True
 
-        if self.isFuzzyMatch(fingerprint, container.name):
+        if self.isFuzzyMatch(fingerprint):
             return True
         
-        logger.info('No match found for [%s], adding new fingerprint %s' % (container.name, fingerprint))
+        logger.info('No match found, adding new fingerprint %s' % fingerprint)
         self.fingerprints.append(fingerprint)
         return False
 
@@ -44,7 +42,7 @@ class FingerprintService:
             json.dump(self.fingerprints, outfile)
 
     def getFingerprint(self, container, filesChanged):
-        fingerprint = {'Tty': False, 'Cmd': u'', 'Entrypoint': u'', 'Image': u'', 'MountsSource': u'', 'hostFileChanges': u''}
+        fingerprint = {'Tty': False, 'Cmd': u'', 'Entrypoint': u'', 'Image': u'', 'MountsSource': u'', 'hostFileChanges': u'', 'Env':u''}
         
         if container.attrs['Config']['Tty']:
             fingerprint['Tty'] = container.attrs['Config']['Tty']
@@ -63,20 +61,23 @@ class FingerprintService:
         if filesChanged:
             fingerprint['hostFileChanges'] = (' ').join(sorted(filesChanged))
         
+        if container.attrs['Config']['Env']:
+            fingerprint['Env'] = (' ').join(container.attrs['Config']['Env'])
+        
         logger.info('Built fingerprint for container [%s] %s' % (container.name, fingerprint))
 
         self.storeFingerprints()
 
         return fingerprint
 
-    def isExactMatch(self, fingerprint, containerName):
+    def isExactMatch(self, fingerprint):
         if fingerprint in self.fingerprints:
-            logger.info('Found exact match for [%s]: %s' % (containerName,fingerprint))
+            logger.info('Found exact match: %s' % fingerprint)
             return True
         else:
             return False
 
-    def isFuzzyMatch(self, fingerprint, containerName):
+    def isFuzzyMatch(self, fingerprint):
         cmdString1 = '%s %s' % (fingerprint['Cmd'], fingerprint['Entrypoint'])
         #replace randomised hex 6+chars
         cmdString1 = re.sub("[a-f0-9]{6,}", "XXXXXXXXXX", cmdString1)
@@ -91,7 +92,8 @@ class FingerprintService:
             
             match =  (fingerprint['MountsSource'] == oldFingerprint['MountsSource'] and 
                                                     fingerprint['Tty'] == oldFingerprint['Tty'] and 
-                                                    fingerprint['Image'] == oldFingerprint['Image'] and 
+                                                    fingerprint['Image'] == oldFingerprint['Image'] and
+                                                    fingerprint['Env'] == oldFingerprint['Env'] and 
                                                     cmdFuzzRatio > Configuration().get("fingerprintFuzzyMatchThresholdScore")
             )
             #host file changes are different - check for fuzzy match
@@ -102,7 +104,7 @@ class FingerprintService:
                         hostFileFuzzRatio > Configuration().get("fingerprintFuzzyMatchThresholdScore")
                 )
             if match:
-                logger.info('Found fuzzy match for [%s]. Current: %s Cached: %s' % (containerName, fingerprint, oldFingerprint))
+                logger.info('Found fuzzy match for [%s]. Current: %s Cached: %s' % (fingerprint, oldFingerprint))
                 return True
 
 

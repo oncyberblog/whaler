@@ -39,17 +39,7 @@ class CaptureContainer(BaseContainer):
 		logging.debug(strReport)
 		return report
 
-	def saveCaptureReport(self, container, pCapFileStoragePath):
-			logger.info("Generating Pcap Report for [%s]" % (container.name))
-			report=self.getPcapFileReport(container.name)
-			logger.info("Pcap Report for [%s] - %s" % (container.name, report))
-			strReport = json.dumps(report, sort_keys=True,indent=4)
-			with open(pCapFileStoragePath + "/captureReport.json", 'w') as outfile:
-				outfile.write(strReport)
-			
-			logger.info("Pcap Report for [%s] - written to [%s]" % (container.name, pCapFileStoragePath + "/captureReport.json"))
-
-	def archiveCaptureFileAndGenerateReport(self, container, pCapFileStoragePath):
+	def archiveCaptureFile(self, container, pCapFileStoragePath):
 		try:
 			shutil.copyfile(Configuration().get("dataDirectory") + "/capture/capfile", pCapFileStoragePath + "/capture.pcap")
 			logger.info(">>Saved Pcap file(s) to %s/capture.pcap" % pCapFileStoragePath)

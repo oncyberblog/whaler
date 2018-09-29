@@ -7,6 +7,7 @@ services:
     restart: on-failure
     environment:
         - WHALER_DATA_DIR=/var/tmp/whaler
+        - WHALER_INSTALL_NAME=MyUniqueInstallName
         - LOGZIO_TOKEN
         - LOGZIO_ENV
         - LOGZIO_ZONE=us
@@ -14,6 +15,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/tmp/whaler:/var/tmp/whaler
       - /:/host
+  reporting:
+    container_name: whaler_reporting
+    build: ./reporting
+    image: whaler/reporting
+    restart: on-failure
+    volumes:
+      - /var/tmp/whaler/reports:/usr/share/nginx/html/data
+    ports:
+      - "80:80"
   capture:
     container_name: whaler_capture
     build: ./capture

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import datetime, time, logging, os
+import datetime, time, logging, os, json
 
 import docker
 
@@ -18,6 +18,7 @@ class Whaler():
 		self.victimCli=docker.DockerClient(base_url=Configuration().get("dockerDaemonVictimUrl"))
 		self.hostCli=docker.DockerClient(base_url=Configuration().get("dockerDaemonHostUrl"))
 		self.fingerprintService=FingerprintService()
+		self.reports=self.loadReports()
 		
 
 	def run(self):
@@ -53,39 +54,20 @@ class Whaler():
 		time.sleep(Configuration().get("maliciousContainerRunDurationSeconds"))
 		self.victimContainer.stopContainer(container)
 
-		changedFiles=self.victimContainer.getFileSystemDifferencesFromBaseline()
+		#get report
+		report=self.getReport(container)
+		self.saveReport(report)
 
-		logger.debug("identifed changed file set as %s" % changedFiles)
+		if self.fingerprintService.isKnownContainer(report['fingerprint']):
+			logger.info("Found fingerprint match, will not archive container, or pcap")
 
-
-		#check fingerprints - match explicitly, or use fuzzy logic for dynamic scripts / filenames
-		if self.fingerprintService.isKnownContainer(container, changedFiles, outputFolder):
-			logger.info("%s" % {	'containerName': container.name,
-									'timestamp': datetime.datetime.now().isoformat(), 
-									'source': 'Whaler', 
-									'action': 'AttackDetected', 
-									'fingerPrintStatus':'Matched',
-									'fingerprint': self.fingerprintService.getFingerprint(container, changedFiles)
-								}
-			)
-			logger.info("Found fingerprint match, will not archive container, or pcap - only pcap report")
-
-			self.captureContainer.saveCaptureReport(container, outputFolder)
 			self.victimContainer.redeployContainer()
 			self.captureContainer.redeployContainer()
 		else:
-			logger.info("%s" % {	'containerName': container.name,
-									'timestamp': datetime.datetime.now().isoformat(), 
-									'source': 'Whaler', 
-									'action': 'AttackDetected', 
-									'fingerPrintStatus':'UnMatched',
-									'fingerprint': self.fingerprintService.getFingerprint(container, changedFiles)
-								}
-			)
 			#New attack -snapshot container(s) and pcap
 			
 			self.victimContainer.snapshotContainer(container, outputFolder+"/snapshots")
-			self.captureContainer.archiveCaptureFileAndGenerateReport(container, outputFolder)
+			self.captureContainer.archiveCaptureFile(container, outputFolder)
 
 			#restart capture container and save pcap
 			self.victimContainer.snapshotVictimContainer(outputFolder)
@@ -94,8 +76,45 @@ class Whaler():
 		
 		self.victimCli.volumes.prune()
 		self.hostCli.volumes.prune()
-		
 
+	def getReport(self, container):
+
+		changedFiles=self.victimContainer.getFileSystemDifferencesFromBaseline()
+		logger.debug("identifed changed file set as %s" % changedFiles)
+
+		#check fingerprints - match explicitly, or use fuzzy logic for dynamic scripts / filenames
+		fingerprint=self.fingerprintService.getFingerprint(container, changedFiles)
+	
+		#get Pcap summary
+		pcapReport=self.captureContainer.getPcapFileReport(container.name)
+		
+		#form report
+		report={'containerName': container.name,
+	   		'timestamp': datetime.datetime.now().isoformat(), 
+			'fingerprint': fingerprint,
+			'pcapReport': pcapReport}
+		
+		logger.info("Report: %s" % report)
+		return report
+
+	def loadReports(self):
+		reportFolder= Configuration().get("reportFolder")
+		if not os.path.exists(reportFolder): os.makedirs(reportFolder)
+		
+		if os.path.exists(reportFolder + '/reports.json'):
+			with open(reportFolder + '/reports.json') as json_data_file:
+					reports = json.load(json_data_file)
+		else:
+			reports=[]
+		
+		return reports
+
+	def saveReport(self, report):
+		reportFolder= Configuration().get("reportFolder")
+		self.reports.append(report)
+		
+		with open(reportFolder + '/reports.json', 'w') as outfile:
+			json.dump(self.reports, outfile)
 
 if __name__ == '__main__':
 		Whaler().run()

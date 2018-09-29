@@ -1,4 +1,4 @@
-import json, logging, os
+import json, logging, os, hashlib, requests
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,8 @@ class Configuration:
                             'victimContainerDisableRedeploy': False,
                             'victimNetworkName': 'whaler_default',
                             'loggingContainerName': 'whaler_logging',
-                            'loggingContainerImage': 'logzio/logzio-docker'}
+                            'loggingContainerImage': 'logzio/logzio-docker',
+                            'reportFolder': WHALER_DATA_DIR + "/reports"}
         
         logger.info("using configuration set %s" % json.dumps(self.config))
         Configuration.instance=self

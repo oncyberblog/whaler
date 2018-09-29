@@ -1,4 +1,4 @@
-import time, datetime, logging
+import time, datetime, logging, sys, traceback
 
 import docker
 
@@ -52,6 +52,8 @@ class VictimContainer(BaseContainer):
 
 				except Exception as e:
 					logger.warn("VictimContainer: Lost connection, retrying in 10s...[%s]" % e)
+					traceback.print_exc(file=sys.stdout)
+					sys.stdout.flush()
 					time.sleep(10)
 	
 	def processEvents(self, eventListener):

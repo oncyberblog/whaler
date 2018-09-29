@@ -1,0 +1,1 @@
+docker container stop $(docker ps -aq);docker container prune;  docker build -t mynginx .
