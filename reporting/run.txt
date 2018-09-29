@@ -1,1 +1,0 @@
-docker run -p 80:80 -p 8080:8080 -p 2375:2375 -p 6379:6379 -p 5984:5984 -p 8545:8545 -v /var/log/nginx:/var/log/nginx mynginx
