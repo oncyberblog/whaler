@@ -40,6 +40,7 @@ class Whaler():
 
 	def onStart(self, container):
 		#let the container run for some time, to generate evidence
+		image=container.image
 		logger.info("New container reported [%s] image %s will terminate in [%s] seconds" % (container.name,
 										container.image.tags,
 										Configuration().get("maliciousContainerRunDurationSeconds")))
@@ -55,7 +56,7 @@ class Whaler():
 		self.victimContainer.stopContainer(container)
 
 		#get report
-		report=self.getReport(container)
+		report=self.getReport(container, image)
 		self.saveReport(report)
 
 		if self.fingerprintService.isKnownContainer(report['fingerprint']):
@@ -77,13 +78,13 @@ class Whaler():
 		self.victimCli.volumes.prune()
 		self.hostCli.volumes.prune()
 
-	def getReport(self, container):
+	def getReport(self, container, image):
 
 		changedFiles=self.victimContainer.getFileSystemDifferencesFromBaseline()
 		logger.debug("identifed changed file set as %s" % changedFiles)
 
 		#check fingerprints - match explicitly, or use fuzzy logic for dynamic scripts / filenames
-		fingerprint=self.fingerprintService.getFingerprint(container, changedFiles)
+		fingerprint=self.fingerprintService.getFingerprint(container, image, changedFiles)
 	
 		#get Pcap summary
 		pcapReport=self.captureContainer.getPcapFileReport(container.name)

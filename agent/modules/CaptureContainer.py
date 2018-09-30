@@ -43,7 +43,6 @@ class CaptureContainer(BaseContainer):
 		try:
 			shutil.copyfile(Configuration().get("dataDirectory") + "/capture/capfile", pCapFileStoragePath + "/capture.pcap")
 			logger.info(">>Saved Pcap file(s) to %s/capture.pcap" % pCapFileStoragePath)
-			self.saveCaptureReport(container, pCapFileStoragePath)
 			
 		except Exception as e:
 			logger.error("Error archiving capture file [%s]" % e)

@@ -41,7 +41,7 @@ class FingerprintService:
         with open(Configuration().get("dataDirectory") + '/fingerprints.json', 'w') as outfile:
             json.dump(self.fingerprints, outfile)
 
-    def getFingerprint(self, container, filesChanged):
+    def getFingerprint(self, container, image, filesChanged):
         fingerprint = {'Tty': False, 'Cmd': u'', 'Entrypoint': u'', 'Image': u'', 'MountsSource': u'', 'hostFileChanges': u'', 'Env':u''}
         
         if container.attrs['Config']['Tty']:
@@ -50,7 +50,7 @@ class FingerprintService:
         if container.attrs['Config']['Cmd']:
             fingerprint['Cmd'] = (' ').join(container.attrs['Config']['Cmd'])
         
-        fingerprint['Image'] = container.image.tags[0]
+        fingerprint['Image'] = ''.join(image.tags)
         
         if container.attrs['Config']['Entrypoint']:
             fingerprint['Entrypoint'] = (' ').join(container.attrs['Config']['Entrypoint'])
