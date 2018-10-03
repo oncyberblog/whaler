@@ -104,7 +104,7 @@ class FingerprintService:
                         hostFileFuzzRatio > Configuration().get("fingerprintFuzzyMatchThresholdScore")
                 )
             if match:
-                logger.info('Found fuzzy match for [%s]. Current: %s Cached: %s' % (fingerprint, oldFingerprint))
+                logger.info('Found fuzzy match. Current: %s Cached: %s' % (fingerprint, oldFingerprint))
                 return True
 
 
